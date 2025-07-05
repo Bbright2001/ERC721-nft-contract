@@ -7,20 +7,40 @@ import {ERC721URIStorage} from "lib/openzeppelin-contracts/contracts/token/ERC72
 
 contract ColabNft is ERC721, ERC721URIStorage {
     address owner;
+    struct participantInfo{
+        bool taskCompleted;
+        bool minted;
+    }
+    
+
     uint256 private _nextTokenId = 1;
     string private constant FIXED_TOKEN_URI =
         "https://gateway.pinata.cloud/ipfs/bafkreidmfnqopvdqtb2njf6jm4tu3whunm2cmzt4ydyljuht7grg7wpjcq";
 
 
+     mapping(uint256 => participantInfo) public participantTokenId;
+
     constructor(address initialOwner) ERC721("Colab BlockChain", "CBK") {
         owner = initialOwner;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "unauthorized access");
+    error onlyOwnerAccess();
+
+
+    event OwnershipTransferred(address newOwner);
+    event TaskCompleted();
+
+    modifier onlyOwner(address _initialOwner) {
+
+        if (owner != msg.sender) revert onlyOwnerAccess();
         _;
     }
-        // Function to issue a certificate NFT with a fixed URI
+
+    function taskParticipation() external {
+        require(msg.sender == address(0), "Invalid Participant")
+        
+    }
+        // Function to issue a participation reward with a fixed URI
     function mint() external {
        uint256 token_id = _nextTokenId;
         _safeMint(msg.sender, token_id);
@@ -51,6 +71,14 @@ contract ColabNft is ERC721, ERC721URIStorage {
         return super.supportsInterface(interfaceId);
     }
 
+    // function that allows for ownership tranfer
+
+    function transferOwner(address _newOwner) internal onlyOwner {
+        require(_newOwner != address(0), "invalid Address");
+        owner = _newOwner;
+
+        emit OwnershipTransferred(address _newOwner);
+    }
 
 }
 
