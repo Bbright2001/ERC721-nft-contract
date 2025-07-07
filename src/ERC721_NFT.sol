@@ -7,57 +7,55 @@ import {ERC721URIStorage} from "lib/openzeppelin-contracts/contracts/token/ERC72
 
 contract ColabNft is ERC721, ERC721URIStorage {
     address owner;
+
     struct participantInfo{
-        bool taskCompleted;
-        bool minted;
+        bool hasParticipated;
     }
     
-
+   
     uint256 private _nextTokenId = 1;
     string private constant FIXED_TOKEN_URI =
-        "https://gateway.pinata.cloud/ipfs/bafkreidmfnqopvdqtb2njf6jm4tu3whunm2cmzt4ydyljuht7grg7wpjcq";
+        "https://gateway.pinata.cloud/ipfs/bafkreicqrevo7hw64lw2ymgwkhri4zyno6mfkvvsivpmorazpmoioe7qhi";
 
 
-     mapping(uint256 => participantInfo) public participantTokenId;
+     mapping(address => participantInfo) public participants;
+     mapping(address => uint256) public addressToToken;
 
     constructor(address initialOwner) ERC721("Colab BlockChain", "CBK") {
         owner = initialOwner;
     }
 
     error onlyOwnerAccess();
+    error alreadyParticipated();
+  
 
 
     event OwnershipTransferred(address newOwner);
     event TaskCompleted();
 
-    modifier onlyOwner(address _initialOwner) {
+    modifier onlyOwner() {
 
         if (owner != msg.sender) revert onlyOwnerAccess();
         _;
     }
 
     function taskParticipation() external {
-        require(msg.sender == address(0), "Invalid Participant")
-        
+            participantInfo storage p = participants[msg.sender];
+            if(p.hasParticipated) revert  alreadyParticipated();
+
+            p.hasParticipated = true;
+
+            uint256 token_id = _nextTokenId;
+            _safeMint(msg.sender, token_id);
+            _setTokenURI(token_id, FIXED_TOKEN_URI);   
+
+            addressToToken[msg.sender] = token_id;   
+
+            _nextTokenId++;
+
+             emit TaskCompleted();
     }
-        // Function to issue a participation reward with a fixed URI
-    function mint() external {
-       uint256 token_id = _nextTokenId;
-        _safeMint(msg.sender, token_id);
-        _setTokenURI(token_id, FIXED_TOKEN_URI);        
-
-        _nextTokenId++;
-    }
-
-      function mint_with_uri(address receiver, string memory uri) external {
-       uint256 token_id = _nextTokenId;
-        _safeMint(receiver, token_id);
-        _setTokenURI(token_id, uri);        
-
-        _nextTokenId++;
-    }
-
-
+  
 
     function tokenURI(
         uint256 tokenId
@@ -77,7 +75,7 @@ contract ColabNft is ERC721, ERC721URIStorage {
         require(_newOwner != address(0), "invalid Address");
         owner = _newOwner;
 
-        emit OwnershipTransferred(address _newOwner);
+        emit OwnershipTransferred(_newOwner);
     }
 
 }
